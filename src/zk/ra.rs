@@ -1,15 +1,17 @@
 use std::collections::HashMap;
-use rand::Rng;
+use rand::{random, Rng};
 use sha2::{Sha256, Digest};
 
 pub struct RA {
     users: HashMap<String, u64>, // 存储用户ID和对应的V1
     pub n: u64,
     pub g: u64,
-    gateway_id: String,
+    //gateway_id: String,
+    gateway_map: HashMap<String, (String, u64, u64)>, // 网关ID、IDg、Rg
 }
 
 impl RA {
+    /*
     pub fn new(gateway_id: String) -> Self {
         RA {
             users: HashMap::new(),
@@ -18,15 +20,30 @@ impl RA {
             gateway_id,
         }
     }
+     */
+    pub fn new() -> Self {
+        RA {
+            users: HashMap::new(),
+            n: 0,
+            g: 0,
+            //gateway_id,
+            gateway_map: HashMap::new(), // 网关ID、IDg、Rg
+        }
+    }
 
     // 初始化
     pub fn initialize(&mut self) {
         // 生成大素数 n
-        self.n = self.generate_large_prime();
-        //self.n=23;
+        //self.n = self.generate_large_prime();
+        self.n=23;
         // 生成生成元 g
-        self.g = self.generate_generator(self.n);
-        //self.g=5;
+        //self.g = self.generate_generator(self.n);
+        self.g=5;
+    }
+
+    // 处理网关注册
+    pub fn register_gateway(&mut self, gid: String, idg: String, cg: u64, rg: u64) {
+        self.gateway_map.insert(gid, (idg, cg, rg));
     }
 
     //用户注册
@@ -45,12 +62,35 @@ impl RA {
     }
 
     // 获取参数
-    pub fn get_parameters(&self) -> Result<(u64, u64, String), &'static str> {
+    /*pub fn get_parameters(&self) -> Result<(u64, u64, String), &'static str> {
+
         if self.n == 0 || self.g == 0 {
             return Err("参数未初始化");
         }
 
         Ok((self.n, self.g, self.gateway_id.clone()))
+    }*/
+    pub fn get_parameters(&self, gateway_gid: &str) -> Result<(u64, u64, String, u64, u64), &'static str> {
+        if self.n == 0 || self.g == 0 {
+            return Err("参数未初始化");
+        }
+
+        if let Some((idg, cg, rg)) = self.gateway_map.get(gateway_gid) {
+            // 生成临时ID PIDu
+            let pidu = format!("{}", random::<u64>());
+
+            // 计算 X = H(IDg || Rg)
+            let mut hasher = Sha256::new();
+            hasher.update(idg.as_bytes());
+            hasher.update(rg.to_ne_bytes());
+            let x = hasher.finalize();
+            let x_value = u64::from_be_bytes(x[..8].try_into().unwrap());
+            //println!("1+{}",idg);
+
+            Ok((self.n, self.g, pidu, *cg, x_value))
+        } else {
+            Err("网关未注册")
+        }
     }
 
     // 辅助函数：计算 V2
