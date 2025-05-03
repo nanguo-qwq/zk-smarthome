@@ -6,27 +6,16 @@ pub struct RA {
     users: HashMap<String, u64>, // 存储用户ID和对应的V1
     pub n: u64,
     pub g: u64,
-    //gateway_id: String,
     gateway_map: HashMap<String, (String, u64, u64)>, // 网关ID、IDg、Rg
 }
 
 impl RA {
-    /*
-    pub fn new(gateway_id: String) -> Self {
-        RA {
-            users: HashMap::new(),
-            n: 0,
-            g: 0,
-            gateway_id,
-        }
-    }
-     */
+
     pub fn new() -> Self {
         RA {
             users: HashMap::new(),
             n: 0,
             g: 0,
-            //gateway_id,
             gateway_map: HashMap::new(), // 网关ID、IDg、Rg
         }
     }
@@ -61,15 +50,6 @@ impl RA {
         Ok(())
     }
 
-    // 获取参数
-    /*pub fn get_parameters(&self) -> Result<(u64, u64, String), &'static str> {
-
-        if self.n == 0 || self.g == 0 {
-            return Err("参数未初始化");
-        }
-
-        Ok((self.n, self.g, self.gateway_id.clone()))
-    }*/
     pub fn get_parameters(&self, gateway_gid: &str) -> Result<(u64, u64, String, u64, u64), &'static str> {
         if self.n == 0 || self.g == 0 {
             return Err("参数未初始化");
