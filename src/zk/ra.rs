@@ -3,10 +3,10 @@ use rand::{random, Rng};
 use sha2::{Sha256, Digest};
 
 pub struct RA {
-    users: HashMap<String, u64>, // 存储用户ID和对应的V1
+    users: HashMap<String, u64>, //存储用户ID和对应的V1
     pub n: u64,
     pub g: u64,
-    gateway_map: HashMap<String, (String, u64, u64)>, // 网关ID、IDg、Rg
+    gateway_map: HashMap<String, (String, u64, u64)>, //网关ID、IDg、Rg
 }
 
 impl RA {
@@ -16,21 +16,21 @@ impl RA {
             users: HashMap::new(),
             n: 0,
             g: 0,
-            gateway_map: HashMap::new(), // 网关ID、IDg、Rg
+            gateway_map: HashMap::new(), //网关ID、IDg、Rg
         }
     }
 
-    // 初始化
+    //初始化
     pub fn initialize(&mut self) {
-        // 生成大素数 n
-        //self.n = self.generate_large_prime();
-        self.n=23;
-        // 生成生成元 g
-        //self.g = self.generate_generator(self.n);
-        self.g=5;
+        //生成大素数 n
+        self.n = self.generate_large_prime();
+        //self.n=23;
+        //生成生成元 g
+        self.g = self.generate_generator(self.n);
+        //self.g=5;
     }
 
-    // 处理网关注册
+    //网关注册
     pub fn register_gateway(&mut self, gid: String, idg: String, cg: u64, rg: u64) {
         self.gateway_map.insert(gid, (idg, cg, rg));
     }
@@ -43,10 +43,10 @@ impl RA {
 
         self.users.insert(user_id.clone(), v1);
 
-        // 计算 V2 = g^V1 mod n
+        //V2=g^V1 mod n
         let v2 = self.compute_v2(v1);
 
-        // 将参数发送给网关和用户
+        //发送参数
         Ok(())
     }
 
@@ -56,10 +56,10 @@ impl RA {
         }
 
         if let Some((idg, cg, rg)) = self.gateway_map.get(gateway_gid) {
-            // 生成临时ID PIDu
+            //生成临时ID PIDu
             let pidu = format!("{}", random::<u64>());
 
-            // 计算 X = H(IDg || Rg)
+            //X=H(IDg||Rg)
             let mut hasher = Sha256::new();
             hasher.update(idg.as_bytes());
             hasher.update(rg.to_ne_bytes());
@@ -73,12 +73,12 @@ impl RA {
         }
     }
 
-    // 辅助函数：计算 V2
+    //V2
     pub fn compute_v2(&self, v1: u64) -> u64 {
         self.mod_pow(self.g, v1, self.n)
     }
 
-    // 辅助函数：生成大素数
+    //大素数
     fn generate_large_prime(&mut self) -> u64 {
         let mut rng = rand::thread_rng();
         loop {
@@ -89,7 +89,7 @@ impl RA {
         }
     }
 
-    // 辅助函数：生成生成元
+    //生成元
     fn generate_generator(&self, prime: u64) -> u64 {
         let mut rng = rand::thread_rng();
         let mut candidate;
@@ -102,7 +102,7 @@ impl RA {
         candidate
     }
 
-    // 辅助函数：检查是否为素数
+    //素数检查
     fn is_prime(&self, mut n: u64) -> bool {
         if n <= 1 {
             return false;
@@ -127,12 +127,12 @@ impl RA {
         true
     }
 
-    // 辅助函数：检查是否为生成元
+    //生成元检查
     fn is_generator(&self, g: u64, p: u64) -> bool {
         let mut factors = Vec::new();
         let mut n = p - 1;
 
-        // 分解 p-1
+        //分解 p-1
         for i in 2..n {
             if n % i == 0 {
                 factors.push(i);
@@ -142,7 +142,7 @@ impl RA {
             }
         }
 
-        // 检查 g 是否为生成元
+        //检查g是否为生成元
         for &q in &factors {
             if self.mod_pow(g, (p-1)/q, p) == 1 {
                 return false;
@@ -152,7 +152,7 @@ impl RA {
         true
     }
 
-    // 模幂运算
+    //模幂运算
     fn mod_pow(&self, base: u64, exponent: u64, modulus: u64) -> u64 {
         let mut result = 1;
         let mut base = base % modulus;

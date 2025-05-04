@@ -1,5 +1,4 @@
-use std::collections::HashMap;
-use rand::{random, Rng};
+use rand::random;
 use Zk_smarthome::zk::gateway::Gateway;
 use Zk_smarthome::zk::ra::RA;
 use Zk_smarthome::zk::userdevice::UserDevice;
@@ -37,7 +36,7 @@ fn main() {
     let is_authenticated = user.login("password123", &bio);
     println!("用户登录验证: {}", if is_authenticated { "成功" } else { "失败" });
 
-    // 用户-网关认证阶段
+    // 用户-网关认证
     if is_authenticated {
         // 1. 验证网关身份
         let x1 = gateway.authenticate_gateway(&user.pidu, user.cg);
@@ -53,7 +52,7 @@ fn main() {
             let new_pidu = format!("{}", random::<u64>());
             let n2 = rand::random::<u64>() % n;
 
-            // 用户完成认证
+            // 完成认证
             let authentication_result = user.complete_authentication(&mut gateway, pidu, new_pidu.clone(), n2, n1, t1);
             println!("用户认证: {}", if authentication_result { "成功" } else { "失败" });
 

@@ -14,7 +14,7 @@ impl FuzzyExtractor {
             hu: vec![],
         }
     }
-    // 模糊提取器的生成函数
+    //模糊提取器的生成函数
     pub fn generate(&self, bio: &[u8]) -> (Vec<u8>, Vec<u8>) {
         let mut rng = rand::thread_rng();
         let mut bu = vec![0u8; 16];
@@ -26,7 +26,7 @@ impl FuzzyExtractor {
         (bu, hu)
     }
 
-    // 模糊提取器的再生函数
+    //模糊提取器的再生函数
     pub fn reproduce(&self, bio: &[u8], hu: &[u8]) -> Vec<u8> {
         let mut bu = hu.iter().zip(bio.iter()).map(|(a, b)| a - b).collect();
         bu
