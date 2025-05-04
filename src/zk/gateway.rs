@@ -101,8 +101,9 @@ impl Gateway {
 
 
     // 密钥更新
-    pub fn update_user_key(&mut self, user_id: String, new_v2: u64) {
+    pub fn update_user_key(&mut self, user_id: String, mut new_v2: u64, r: u64) {
         if self.users.contains_key(&user_id) {
+            new_v2 = new_v2 / r % self.n;
             self.users.insert(user_id, new_v2);
         }
     }

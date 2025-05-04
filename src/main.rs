@@ -23,7 +23,8 @@ fn main() {
     //println!("0+{}",gid.clone());
 
     // 3. 用户注册
-    if let Err(e) = user.register("password123", &mut ra, &mut gateway) {
+    let bio = vec![0u8; 16]; // 获取简化版生物特征数据
+    if let Err(e) = user.register("password123", &bio, &mut ra, &mut gateway) {
         println!("注册失败: {}", e);
         return;
     }
@@ -33,7 +34,7 @@ fn main() {
 
 
     // 用户登录验证
-    let is_authenticated = user.login("password123");
+    let is_authenticated = user.login("password123", &bio);
     println!("用户登录验证: {}", if is_authenticated { "成功" } else { "失败" });
 
     // 用户-网关认证阶段
@@ -57,10 +58,16 @@ fn main() {
             println!("用户认证: {}", if authentication_result { "成功" } else { "失败" });
 
         }
-        // 密钥更新
-        user.update_password("new_password", &mut gateway);
-        println!("用户密钥更新: 成功");
 
     }
 
+    // 密钥更新
+    let is_authenticated2 = user.login("password123", &bio);
+    println!("用户旧密钥登录验证: {}", if is_authenticated2 { "成功" } else { "失败" });
+    let new_bio = vec![1u8; 16]; // 生成新的简化版生物特征数据
+    user.update_password("new_password", &new_bio, &mut gateway);
+    let is_authenticated3 = user.login("new_password", &new_bio);
+    println!("用户密钥更新: {}", if is_authenticated3 { "成功" } else { "失败" });
+
 }
+

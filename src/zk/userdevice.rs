@@ -1,6 +1,7 @@
 use sha2::{Sha256, Digest};
 use crate::zk::gateway::Gateway;
-use crate::zk::{gateway, ra};
+use crate::zk::{fuzzyextractor, gateway, ra};
+use crate::zk::fuzzyextractor::FuzzyExtractor;
 
 pub struct UserDevice {
     id: String,
@@ -11,6 +12,7 @@ pub struct UserDevice {
     pub cg: u64,
     pub pidu: String,
     x: u64,
+    hu: Vec<u8> ,
 }
 
 impl UserDevice {
@@ -24,19 +26,26 @@ impl UserDevice {
             cg: 0,
             pidu: String::new(),
             x: 0,
+            hu: Vec::new(),
         }
     }
 
     // 注册
     // 注册用户
-    pub fn register(&mut self, pw: &str, ra: &mut ra::RA, gateway: &mut gateway::Gateway) -> Result<(), &'static str> {
+    pub fn register(&mut self, pw: &str, bio: &[u8], ra: &mut ra::RA, gateway: &mut gateway::Gateway) -> Result<(), &'static str> {
         // 网关准备阶段
         let (gid, cg, rg) = gateway.register_preparation();
 
-        // 计算 V1 = H(IDu || PWu)
+        // 使用模糊提取器生成 Bu 和 hu
+        let fuzzyextractor = FuzzyExtractor::new();
+        let (bu, hu) = fuzzyextractor.generate(bio);
+        self.hu = hu.clone();
+
+        // 计算 V1 = H(IDu || PWu || Bu)
         let mut hasher = Sha256::new();
         hasher.update(self.id.as_bytes());
         hasher.update(pw.as_bytes());
+        hasher.update(&bu);
         let hash = hasher.finalize();
         self.v1 = u64::from_be_bytes(hash[..8].try_into().unwrap());
 
@@ -59,10 +68,16 @@ impl UserDevice {
     }
 
     // 本地登录验证
-    pub fn login(&self, pw: &str) -> bool {
+    pub fn login(&self, pw: &str, bio: &[u8]) -> bool {
+        // 通过再生算法再生 Bu
+        let fuzzyextractor = FuzzyExtractor::new();
+        let bu = fuzzyextractor.reproduce(bio, &self.hu);
+
+        // 计算 V1' = H(IDu || PWu || Bu)
         let mut hasher = Sha256::new();
         hasher.update(self.id.as_bytes());
         hasher.update(pw.as_bytes());
+        hasher.update(&bu);
         let hash = hasher.finalize();
         let v1_prime = u64::from_be_bytes(hash[..8].try_into().unwrap());
 
@@ -109,21 +124,29 @@ impl UserDevice {
     }
 
     // 更新用户密钥
-    pub fn update_password(&mut self, new_pw: &str, gateway: &mut Gateway) {
+    pub fn update_password(&mut self, new_pw: &str,new_bio: &[u8], gateway: &mut Gateway) {
+        // 生成新的 Bu 和 hu
+        let fuzzyextractor = FuzzyExtractor::new();
+        let (new_bu, new_hu) = fuzzyextractor.generate(new_bio);
+        self.hu = new_hu.clone();
+
         // 计算新的 V1'
         let mut hasher = Sha256::new();
         hasher.update(self.id.as_bytes());
         hasher.update(new_pw.as_bytes());
+        hasher.update(&new_bu);
         let hash = hasher.finalize();
         let new_v1 = u64::from_be_bytes(hash[..8].try_into().unwrap());
+
+        let r = rand::random::<u64>() % self.n;
 
         self.v1 = new_v1;
 
         // 计算新的 V2' = g^V1' mod n
-        let new_v2 = self.compute_v2();
+        let new_v2 = self.compute_v2() * r % self.n;
 
         // 发送给网关
-        gateway.update_user_key(self.id.clone(), new_v2);
+        gateway.update_user_key(self.id.clone(), new_v2, r);
     }
 
 
@@ -149,3 +172,4 @@ impl UserDevice {
         result
     }
 }
+
